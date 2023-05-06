@@ -3,7 +3,7 @@ import pybullet_data
 import numpy as np
 import matplotlib.pyplot as plt
 
-from utils import minimized_angle
+import utils
 
 try:
     import torch
@@ -74,6 +74,12 @@ class Field:
         # add the robot and landmarks to the pybullet scene
         self.create_scene()
         self.add_robot()
+        # addUserDebugLine() plots of noisefree/real/estimated paths are seen in 3D window, but not in getCameraImage()
+        # camera_target = [self.MARKER_X_POS[2]/100, 0.5 * self.MARKER_Y_POS[4]/100, 0] 
+        # camera_eye = list(camera_target)
+        # camera_eye[2] += 200
+        # self.image_size = [640, 480]
+        # self.add_screenshot_camera(camera_target, camera_eye, self.image_size)
         
         self.use_learned_observation_model = use_learned_observation_model
         self.supervision_mode = supervision_mode
@@ -131,7 +137,7 @@ class Field:
         theta = prev_theta + rot1
         x_next[0] = prev_x + trans * np.cos(theta)
         x_next[1] = prev_y + trans * np.sin(theta)
-        x_next[2] = minimized_angle(theta + rot2)
+        x_next[2] = utils.minimized_angle(theta + rot2)
 
         return x_next.reshape((-1, 1))
 
@@ -147,7 +153,7 @@ class Field:
         """
         dx = self.MARKER_X_POS[marker_id] - x[0]
         dy = self.MARKER_Y_POS[marker_id] - x[1]
-        return np.array([minimized_angle(np.arctan2(dy, dx) - x[2])]).reshape((-1, 1))
+        return np.array([utils.minimized_angle(np.arctan2(dy, dx) - x[2])]).reshape((-1, 1))
 
     def noise_from_motion(self, u, alphas):
         """Compute covariance matrix for noisy action.
@@ -296,6 +302,24 @@ class Field:
     def add_robot(self):
         self.racer_car_id = self.p.loadURDF('racecar.urdf', [0,0,0], [0,0,0,1])
     
+    def add_screenshot_camera(self, camera_target, camera_eye, image_size):
+        camera_up_vector = [0, 1, 0]
+        '''
+        view_matrix is responsible for transforming objects' positions and orientations from the world coordinate system to the camera coordinate system
+            cameraEyePosition: list or tuple with three elements representing the X, Y, and Z coordinates of | the camera's position | in the world coordinate system
+            cameraTargetPosition: ...........................................................................| the point the camera is looking at |..................
+            cameraUpVector: list or tuple with three elements representing the up direction of the camera, which is orthogonal (perpendicular) to the direction the camera is pointing
+        '''
+        self.view_matrix = self.p.computeViewMatrix(cameraEyePosition=camera_eye, cameraTargetPosition=camera_target, cameraUpVector=camera_up_vector)
+        '''
+        projection_matrix is responsible for converting the 3D coordinates of objects in the camera's coordinate system to 2D coordinates on the screen
+            fov: vertical field of view angle (in radians) of the camera lens. This defines the extent of the observable world that is seen by the camera
+            aspect: aspect ratio of the camera's viewport, which is the ratio of the width to the height of the imag
+            nearVal: distance from the camera to the near clipping plane. Objects | closer | to the camera than this distance will not be rendered
+            farVal: ..............................................................| farther |.....................................................
+        '''
+        self.projection_matrix = self.p.computeProjectionMatrixFOV(fov=float(np.radians(90)), aspect=float(image_size[0])/image_size[1], nearVal=0.1, farVal=600.0)
+
     def move_robot(self, x):
         p = [x[0]/100., x[1]/100., 0]
         q = self.p.getQuaternionFromEuler([0,0,x[2]+np.pi])
