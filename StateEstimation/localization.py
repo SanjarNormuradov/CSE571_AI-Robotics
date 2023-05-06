@@ -1,8 +1,3 @@
-""" Written by Brian Hou for CSE571: Probabilistic Robotics (Winter 2019)
-    Modified by Wentao Yuan for CSE571: Probabilistic Robotics (Spring 2022)
-    Modified by Aaron Walsman and Zoey Chen for CSEP590A: Robotics (Spring 2023)
-"""
-
 import time
 import math
 import argparse

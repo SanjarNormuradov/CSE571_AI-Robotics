@@ -1,6 +1,3 @@
-""" Written by Brian Hou for CSE571: Probabilistic Robotics
-"""
-
 import numpy as np
 
 from utils import minimized_angle
