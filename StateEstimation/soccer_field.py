@@ -100,9 +100,8 @@ class Field:
         """Compute the Jacobian of the dynamics with respect to the state."""
         prev_x, prev_y, prev_theta = x.ravel()
         rot1, trans, rot2 = u.ravel()
-        mu_pred = np.array([prev_x + trans * np.cos(prev_theta + rot1), prev_y + trans * np.sin(prev_theta + rot1), prev_theta + rot1 + rot2]).reshape((-1, 1))
-        Gmat = np.array([1, 0, -trans * np.sin(prev_theta + rot1), 0, 1, trans * np.cos(prev_theta + rot1), 0, 0, 1]).reshape((3, 3))
-        return Gmat
+        Gmat = np.array([1, 0, -trans * np.sin(prev_theta + rot1), 0, 1, trans * np.cos(prev_theta + rot1), 0, 0, 1])
+        return Gmat.reshape((3, 3))
 
     def V(self, x, u):
         """Compute the Jacobian of the dynamics with respect to the control."""
@@ -118,8 +117,8 @@ class Field:
         a1 = self.MARKER_X_POS[marker_id] - prev_x
         # a2 = Ly - Yt
         a2 = self.MARKER_Y_POS[marker_id] - prev_y
-        Hmat = np.array([a2 / (a1**2 + a2**2), -a1 / (a1**2 + a2**2), -1]).reshape((1, -1))
-        return Hmat
+        Hmat = np.array([a2 / (a1**2 + a2**2), -a1 / (a1**2 + a2**2), -1.0])
+        return Hmat.reshape((1, -1))
 
 
     def forward(self, x, u):

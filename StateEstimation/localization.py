@@ -49,7 +49,8 @@ def localize(
             # filters only know the action and observation
             mean, cov = filt.update(env, u_noisefree, z_real, marker_id)
         states_filter[i+1, :] = mean.ravel()
-        
+
+        # Write real and estimated mean into txt file to build the plot later 
         with open(mean_filename + ".txt", "a") as file:
             x_real_line = '\t'.join([f"{x:8.4f}" for x in x_real.ravel()])
             mean_line = '\t'.join([f"{x:8.4f}" for x in mean.ravel()])
@@ -182,54 +183,63 @@ if __name__ == '__main__':
 
     policy = policies.OpenLoopRectanglePolicy()
 
-    filename =  f"{args.filter_type}_errors_df{int(args.data_factor)}_ff{int(args.filter_factor)}"
-    if args.seed is None:
-        filename += '_seedConst'
-    else:
-        filename += '_seedRand'
+    # File path to save position (optionally Mahalanobis) errors and ANEES (Avarage Normalized Estimation Error Squared)
+    # depending on filter-type, data/filter factors and numpy.random.seed 
+    # if "--seed i" then for each different data/filter factor simulations 
+    #   numpy.random.seed would be set with the same value for each trial ("--num-trial n", default=10) starting from i with 1 step increment,
+    #   i.e. data-factor=1, filter-factor=1: trial#1 (np.random.seed=i), trial#2 (np.random.seed=i+1), ... trial#n (np.random.seed=i+n-1)
+    #        data-factor=1, filter-factor=4: trial#1 (np.random.seed=i), trial#2 (np.random.seed=i+1), ... trial#n (np.random.seed=i+n-1)
+    # else ("--seed i" not specified), then 
+    #        data-factor=1, filter-factor=1: trial#1 (np.random.seed=i), trial#2 (np.random.seed=i+1), ... trial#n (np.random.seed=i+n-1)
+    #        data-factor=1, filter-factor=4: trial#1 (np.random.seed=i+n), trial#2 (np.random.seed=i+n+1), ... trial#n (np.random.seed=i+2n-1)
+    filename =  f"{args.filter_type}_errors_df{int(args.data_factor)}_ff{int(args.filter_factor)}_tr{args.num_trials}"
+    filename += '_seedRand' if args.seed is None else '_seedConst'
+
+    # File path to save mean data (real and estimated) to built plots (x,y,theta) for each trial of different data/filter factors
+    # Reusable (write/read/clean) 
+    mean_filename = f"{args.filter_type}_mean"
+
+    if args.seed is not None:
+        assert args.seed >= 0, f"random.seed couldn't be negative, {args.seed}"
+    rand_start = 0 if args.seed is None else args.seed
 
     for filter_factor_exp in range(-int(math.log(args.filter_factor, 4)), int(math.log(args.filter_factor, 4)) + 1): 
         filter_factor = 4**filter_factor_exp
-        if args.data_factor == 1:
-            data_factor = args.data_factor
-        else:
-            data_factor = filter_factor
-        print('\nData factor: ', data_factor)
-        print('Filter factor: ', filter_factor)
+        data_factor = args.data_factor if args.data_factor == 1 else filter_factor
+        print(f"\nData factor: {data_factor}\nFilter factor: {filter_factor}", )
 
-        mean_filename = f"{args.filter_type}_mean"
-
+        # Clean the file before writing any new data
         if filter_factor_exp == -int(math.log(args.filter_factor, 4)):
-            with open(filename + ".txt", "a") as file:
+            with open(filename + ".txt", "w") as file:
+                pass
+
+        with open(filename + ".txt", "a") as file:
+            if filter_factor_exp == -int(math.log(args.filter_factor, 4)):
                 file.write(f"Data factor: {data_factor}\nFilter factor: {filter_factor}")
-        else:
-            with open(filename + ".txt", "a") as file:
+            else:
                 file.write(f"\n\nData factor: {data_factor}\nFilter factor: {filter_factor}")
 
-        for trial_n in range(args.num_trials):
+        for trial_n in range(rand_start, args.num_trials + rand_start):
+            # File path to save screenshots of the car's path. 
+            # FAIL: physicsClient.getCameraImage() doesn't see physicsClient.addUserDebugLine() (car's path)
             # imagename = f"screenshot_{args.filter_type}_df{data_factor}_ff{filter_factor}_#{trial_n}"
-            # if args.seed is None:
-            #     imagename += '_seedConst'
-            # else:
-            #     imagename += '_seedRand'
+            # imagename += '_seedRand' if args.seed is None else '_seedConst'
 
             initial_mean = np.array([180, 50, 0], dtype=float).reshape((-1, 1))
             initial_cov = np.diag(np.array([10, 10, 1], dtype=float))
 
-            if args.seed is None: rand_seed = trial_n
-            else: rand_seed = (filter_factor_exp + int(math.log(args.filter_factor, 4))) * args.num_trials + trial_n
+            rand_seed = trial_n if args.seed is not None else (filter_factor_exp + int(math.log(args.filter_factor, 4))) * args.num_trials + trial_n
             np.random.seed(rand_seed)
 
-            if trial_n == 0:
-                subtitle = f"Random seed: {rand_seed}"
-            else:
-                subtitle = f"\n\nRandom seed: {rand_seed}"
+            subtitle = f"Random seed: {rand_seed}" if trial_n == rand_start else f"\n\nRandom seed: {rand_seed}"
             with open(mean_filename + ".txt", "a") as file:
+                # Number of states = num-steps + 1 (initial state)
                 x_real_line = '\t'.join([f"{x:8.4f}" for x in initial_mean.ravel()])
                 mean_line = '\t'.join([f"{x:8.4f}" for x in initial_mean.ravel()])
                 subtitle += f"\n{x_real_line}\t\t{mean_line}"
                 file.write(subtitle)
 
+            # Create simulation scene and add the robot
             env = Field(
                 data_factor * alphas,
                 data_factor * beta,
@@ -256,12 +266,12 @@ if __name__ == '__main__':
                     filter_factor * beta
                 )
                 
-            # You may want to edit this line to run multiple localization experiments.
-            errors = "\n" + '\t\t'.join([f"{x:14.8f}" for x in list(localize(mean_filename, env, policy, filt, initial_mean, args.num_steps, args.plot, args.step_pause, args.step_breakpoint))])
+            errors = "\n" + '\t\t'.join([f"{x:15.8f}" for x in list(localize(mean_filename, env, policy, filt, initial_mean, args.num_steps, args.plot, args.step_pause, args.step_breakpoint))])
             errors += f"\t\t{rand_seed:2d}"
+            # Wrtie line of position (optionally Mahalanobis) error, ANEES, random.seed into the file 
             with open(filename + ".txt", "a") as file:
                 file.write(errors)
-                if (filter_factor_exp == int(math.log(args.filter_factor, 4))) and (trial_n == 9):
+                if (filter_factor_exp == int(math.log(args.filter_factor, 4))) and (trial_n == args.num_trials + rand_start - 1):
                     file.write("\n\n")
 
             if args.plot:
@@ -283,7 +293,7 @@ if __name__ == '__main__':
                 input()
                 env.p.disconnect()
 
-        # Open txt file with list of num-steps * args.num_trials (num_trials) estimated and real mean (x,y,theta) for given filter-type, data/filter factors
+        # Open txt file with list of (num_steps * num_trials) estimated and real mean (x,y,theta) for given filter-type, data/filter-factors
         rand_seed_list = []
         x_real_list = []
         mean_list = []
@@ -296,14 +306,15 @@ if __name__ == '__main__':
                         rand_seed_list.append(int(line.rstrip().replace("Random seed: ", "")))
                     else:
                         means_list = [float(x) for x in line.split()]
+                        # x_real/mean_list is [[x1, y1, theta1], [x2, y2, theta2], ... [x(num_steps+1), y(num_steps+1), theta(num_steps+1)]]
                         x_real_list.append(list(means_list[:3]))
                         mean_list.append(list(means_list[3:]))
-        
-        # Clear the content of mean_filename.txt for further reuse
+
+        # Clear the content of mean_filename.txt before reuse
         with open(mean_filename + ".txt", "w") as file:
             pass
 
-        # Plot estimated and real mean (x,y,theta) for given filter-type, data/filter factors and args.num_trials trials into 3 line graphs 
+        # Plot estimated and real mean (x,y,theta) for given filter-type, data/filter-factors and num-trials trials into 3 line graphs 
         fig, (x_plot, y_plot, theta_plot) = plt.subplots(nrows=3, ncols=1, sharex=True, figsize=(20, 10))
         fig.supxlabel('number of steps')
         fig.suptitle(f"Estimated and real mean plots for data factor: {data_factor}, filter factors: {filter_factor}")
@@ -320,25 +331,25 @@ if __name__ == '__main__':
                     color=color_list[2*i], linestyle='--', linewidth=1, marker='o', markersize=1)
 
             line, = x_plot.plot(x_axis, [row[0] for row in mean_list[args.num_steps * i : args.num_steps * (i + 1) + 1]], color=color_list[2*i+1],
-                    label=f"Est. mean, seed: {rand_seed_list[i]}", linestyle='-', linewidth=1, marker='s', markersize=1)
+                    label=f"Estd mean, seed: {rand_seed_list[i]}", linestyle='-', linewidth=1, marker='s', markersize=1)
             y_plot.plot(x_axis, [row[1] for row in mean_list[args.num_steps * i : args.num_steps * (i + 1) + 1]], 
                     color=color_list[2*i+1], linestyle='-', linewidth=1, marker='s', markersize=1)
             theta_plot.plot(x_axis, [row[2] for row in mean_list[args.num_steps * i : args.num_steps * (i + 1) + 1]], 
                     color=color_list[2*i+1], linestyle='-', linewidth=1, marker='s', markersize=1)
 
         fig.legend()
-        if args.seed is None:
-            plt.savefig(mean_filename + f"_df{data_factor}_ff{filter_factor}_seedConst.png", dpi=300, bbox_inches='tight')
+        if args.seed is not None:
+            plt.savefig(mean_filename + f"_df{data_factor}_ff{filter_factor}_tr{args.num_trials}_seedConst.png", dpi=300, bbox_inches='tight')
         else:
-            plt.savefig(mean_filename + f"_df{data_factor}_ff{filter_factor}_seedRand.png", dpi=300, bbox_inches='tight')
+            plt.savefig(mean_filename + f"_df{data_factor}_ff{filter_factor}_tr{args.num_trials}_seedRand.png", dpi=300, bbox_inches='tight')
 
-    # Open txt file with position error, ANEES and random.seed (for each trial and data/filter factors) for a given filter-type
+    # Open the file with position (optionally Mahalanobis) error, ANEES and random.seed (for each trial and data/filter-factors) for a given filter-type
     factor_dict = {'data': [], 'filter': []}
     mean_position_error_list = []
     # mean_mahalanobis_error_list = []
     anees_list = []
     rand_seed_list = []
-    x_axis = [x for x in range(1, 11)]
+    x_axis = [x for x in range(1, args.num_trials + 1)]
     with open(filename + ".txt", "r") as file:
         for line in file:
             # Skip "\n" lines
@@ -353,25 +364,26 @@ if __name__ == '__main__':
                     # mean_mahalanobis_error_list.append(error_list[1])
                     anees_list.append(error_list[1])
                     rand_seed_list.append(int(error_list[2]))
-
-    # Plot the errors into one graph
-    fig, error_plot = plt.subplots(figsize=(16, 8))
-    fig.supxlabel('trial number (different random.seed for each trial and factor)')
-    fig.supylabel('errors')
-    fig.suptitle('Position error and ANEES plots for different data/filter factors (df/ff)')
-    factor_n = len(factor_dict['filter'])
-    for i in range(factor_n):
-        error_plot.plot(x_axis, mean_position_error_list[args.num_trials * i : args.num_trials * (i + 1)], 
-                 label=f"Position df: {factor_dict['data'][i]}; ff: {factor_dict['filter'][i]}; seed: {rand_seed_list[args.num_trials*i]}-{rand_seed_list[args.num_trials*(i+1)-1]}", 
-                 linestyle='-', linewidth=2, marker='s', markersize=5)
-        # error_plot.plot(x_axis, mean_mahalanobis_error_list[args.num_trials * i : args.num_trials * (i + 1)], 
-        #          label=f"Mahalanobis df: {factor_dict['data'][i]}; ff: {factor_dict['filter'][i]}; seed: {rand_seed_list[args.num_trials*i]}-{rand_seed_list[args.num_trials*(i+1)-1]}", 
-        #          linestyle='--', linewidth=2, marker=',', markersize=5)
-        error_plot.plot(x_axis, anees_list[args.num_trials * i : args.num_trials * (i + 1)], 
-                 label=f"ANNES df: {factor_dict['data'][i]}; ff: {factor_dict['filter'][i]}; seed: {rand_seed_list[args.num_trials*i]}-{rand_seed_list[args.num_trials*(i+1)-1]}",
-                 linestyle='-.', linewidth=2, marker='o', markersize=5)
-    fig.legend()
-    plt.savefig(filename + ".png", dpi=300, bbox_inches='tight')
+    
+    if len(rand_seed_list) > 1:
+        # Plot the errors into one graph
+        fig, error_plot = plt.subplots(figsize=(20, 10))
+        fig.supxlabel('trial number (different random.seed for each trial and factor)')
+        fig.supylabel('errors')
+        fig.suptitle('Position error and ANEES plots for different data/filter factors (df/ff)')
+        factor_n = len(factor_dict['filter'])
+        for i in range(factor_n):
+            error_plot.plot(x_axis, mean_position_error_list[args.num_trials * i : args.num_trials * (i + 1)], 
+                    label=f"Position df: {factor_dict['data'][i]}; ff: {factor_dict['filter'][i]}; seed: {rand_seed_list[args.num_trials*i]}-{rand_seed_list[args.num_trials*(i+1)-1]}", 
+                    linestyle='-', linewidth=2, marker='s', markersize=5)
+            # error_plot.plot(x_axis, mean_mahalanobis_error_list[args.num_trials * i : args.num_trials * (i + 1)], 
+            #          label=f"Mahalanobis df: {factor_dict['data'][i]}; ff: {factor_dict['filter'][i]}; seed: {rand_seed_list[args.num_trials*i]}-{rand_seed_list[args.num_trials*(i+1)-1]}", 
+            #          linestyle='--', linewidth=2, marker=',', markersize=5)
+            error_plot.plot(x_axis, anees_list[args.num_trials * i : args.num_trials * (i + 1)], 
+                    label=f"ANNES df: {factor_dict['data'][i]}; ff: {factor_dict['filter'][i]}; seed: {rand_seed_list[args.num_trials*i]}-{rand_seed_list[args.num_trials*(i+1)-1]}",
+                    linestyle='-.', linewidth=2, marker='o', markersize=5)
+        fig.legend()
+        plt.savefig(filename + ".png", dpi=300, bbox_inches='tight')
 
     print("\nPress Enter to disconnect from the simulation...")
     input()

@@ -1,6 +1,5 @@
 import numpy as np
-
-from utils import minimized_angle
+import utils 
 
 
 class ExtendedKalmanFilter:
@@ -47,9 +46,10 @@ class ExtendedKalmanFilter:
         #       x' = x + trans' * cos(theta + rot1')
         #       y' = y + trans' * sin(theta + rot1')
         #       theta' = theta + rot1' + rot2'
-        self.mu[0] += u_noisy[1] * np.cos(self.mu[2] + u_noisy[0])
-        self.mu[1] += u_noisy[1] * np.sin(self.mu[2] + u_noisy[0])
-        self.mu[2] += u_noisy[0] + u_noisy[2]
+        theta = self.mu[2] + u_noisy[0]
+        self.mu[0] += u_noisy[1] * np.cos(theta)
+        self.mu[1] += u_noisy[1] * np.sin(theta)
+        self.mu[2] = utils.minimized_angle(theta + u_noisy[2])
         #   Covariance:
         #       cov' = Gmat * cov * Gmat.T + Vmat * Mmat * Vmat.T
         self.sigma = Gmat.dot(self.sigma).dot(Gmat.T) + Vmat.dot(Mmat).dot(Vmat.T)
