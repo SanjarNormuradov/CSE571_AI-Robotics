@@ -70,7 +70,7 @@ if __name__ == '__main__':
     # current test dataset uses seed 12345
     
     make_dataset(
-        'hw1_%s_dataset'%args.split,
+        'hw1_%s_dataset_%i'%(args.split, args.size),
         args.size,
         seed=args.seed,
         resolution=args.resolution,

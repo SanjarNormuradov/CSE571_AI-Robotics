@@ -1,4 +1,5 @@
 import time
+import os
 import math
 import argparse
 import numpy as np
@@ -178,10 +179,16 @@ if __name__ == '__main__':
     alphas = np.array([0.05**2, 0.005**2, 0.1**2, 0.01**2])
     beta = np.diag([np.deg2rad(5)**2])
     
+    learned_obs_model = ""
     if args.use_learned_observation_model:
         assert args.supervision_mode in ('xy', 'phi')
+        learned_obs_model = f"_cnn_{args.supervision_mode}"  
 
     policy = policies.OpenLoopRectanglePolicy()
+
+    output_directory = f"plots_{args.filter_type}"
+    if not os.path.exists(output_directory):
+        os.makedirs(output_directory)
 
     # File path to save position (optionally Mahalanobis) errors and ANEES (Avarage Normalized Estimation Error Squared)
     # depending on filter-type, data/filter factors and numpy.random.seed 
@@ -190,14 +197,16 @@ if __name__ == '__main__':
     #   i.e. data-factor=1, filter-factor=1: trial#1 (np.random.seed=i), trial#2 (np.random.seed=i+1), ... trial#n (np.random.seed=i+n-1)
     #        data-factor=1, filter-factor=4: trial#1 (np.random.seed=i), trial#2 (np.random.seed=i+1), ... trial#n (np.random.seed=i+n-1)
     # else ("--seed i" not specified), then 
-    #        data-factor=1, filter-factor=1: trial#1 (np.random.seed=i), trial#2 (np.random.seed=i+1), ... trial#n (np.random.seed=i+n-1)
-    #        data-factor=1, filter-factor=4: trial#1 (np.random.seed=i+n), trial#2 (np.random.seed=i+n+1), ... trial#n (np.random.seed=i+2n-1)
-    filename =  f"{args.filter_type}_errors_df{int(args.data_factor)}_ff{int(args.filter_factor)}_tr{args.num_trials}"
+    #        data-factor=1, filter-factor=1: trial#1 (np.random.seed=0), trial#2 (np.random.seed=1), ... trial#n (np.random.seed=n-1)
+    #        data-factor=1, filter-factor=4: trial#1 (np.random.seed=n), trial#2 (np.random.seed=n+1), ... trial#n (np.random.seed=2n-1)
+    filename =  f"{output_directory}/errors_df{int(args.data_factor)}_ff{int(args.filter_factor)}_tr{args.num_trials}"
+    filename += f"_pn_{args.num_particles}" if args.filter_type == 'pf' else "" 
     filename += '_seedRand' if args.seed is None else '_seedConst'
+    filename += f"{learned_obs_model}"
 
     # File path to save mean data (real and estimated) to built plots (x,y,theta) for each trial of different data/filter factors
     # Reusable (write/read/clean) 
-    mean_filename = f"{args.filter_type}_mean"
+    mean_filename = f"{output_directory}/mean"
 
     if args.seed is not None:
         assert args.seed >= 0, f"random.seed couldn't be negative, {args.seed}"
@@ -338,10 +347,10 @@ if __name__ == '__main__':
                     color=color_list[2*i+1], linestyle='-', linewidth=1, marker='s', markersize=1)
 
         fig.legend()
-        if args.seed is not None:
-            plt.savefig(mean_filename + f"_df{data_factor}_ff{filter_factor}_tr{args.num_trials}_seedConst.png", dpi=300, bbox_inches='tight')
-        else:
-            plt.savefig(mean_filename + f"_df{data_factor}_ff{filter_factor}_tr{args.num_trials}_seedRand.png", dpi=300, bbox_inches='tight')
+        mean_plot_filename = mean_filename + f"_df{data_factor}_ff{filter_factor}_tr{args.num_trials}"
+        mean_plot_filename += f"_pn_{args.num_particles}" if args.filter_type == 'pf' else ""
+        mean_plot_filename += '_seedRand' if args.seed is None else '_seedConst'
+        plt.savefig(mean_plot_filename + ".png", dpi=300, bbox_inches='tight')
 
     # Open the file with position (optionally Mahalanobis) error, ANEES and random.seed (for each trial and data/filter-factors) for a given filter-type
     factor_dict = {'data': [], 'filter': []}
