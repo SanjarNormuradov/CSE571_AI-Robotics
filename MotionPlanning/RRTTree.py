@@ -1,0 +1,79 @@
+import operator
+import numpy as np
+
+class RRTTree(object):
+    def __init__(self, planning_env, eta:float, bias:float, output_directory:str, rand_seed:int, stat_filename:str):
+        
+        self.planning_env = planning_env
+        self.vertices = []
+        self.costs = []
+        self.time_cost = None
+        self.path_cost = None
+        self.eta = eta
+        self.rand_seed = rand_seed
+        self.bias = bias
+        self.output_directory = output_directory
+        self.stat_filename = stat_filename
+        self.edges = dict()
+
+
+    def GetRootID(self):
+        """ 
+        Return the ID of the root in the tree.
+        """
+        return 0
+
+
+    def GetNearestVertex(self, config):
+        """ 
+        Return the nearest state ID in the tree.
+        
+        @param config: Sampled configuration.
+        """
+        dists = []
+        for v in self.vertices:
+            dists.append(self.planning_env.compute_distance(config, v))
+        vid, vdist = min(enumerate(dists), key=operator.itemgetter(1))
+
+        return vid, self.vertices[vid]
+            
+
+    def GetNNInRad(self, config, rad):
+        ''' 
+        Return neighbors within ball of radius. Useful for RRT*
+
+        @param config: Sampled configuration.
+        @param    rad: Ball radius
+        '''
+        rad = np.abs(rad)
+        vids = []
+        vertices = []
+        for idx, v in enumerate(self.vertices):
+            if self.planning_env.compute_distance(config, v) < rad:
+                vids.append(idx)
+                vertices.append(v)
+
+        return vids, vertices
+
+
+    def AddVertex(self, config, cost=0):
+        '''
+        Add a state to the tree.
+
+        @param config: Configuration to add to the tree.
+        '''
+        vid = len(self.vertices)
+        self.vertices.append(config)
+        self.costs.append(cost)
+
+        return vid
+
+
+    def AddEdge(self, sid, eid):
+        '''
+        Adds an edge in the tree.
+
+        @param sid: start state ID.
+        @param eid: end state ID.
+        '''
+        self.edges[eid] = sid
