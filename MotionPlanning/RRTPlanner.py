@@ -22,46 +22,44 @@ class RRTPlanner(object):
         start_time = time.time()
         path = None
         vertex_id, vertex = None, None
-        is_edge_valid = False
+        branch_id = 0
         # Generate RRT
         #   Seed the tree
         self.tree.AddVertex(start_config)
         #   Expand the tree
-        for branch_id in range(1, self.max_iter+1):
+        for id in range(1, self.max_iter+1):
             # Randomly sample free state from the map, as long as an 
             # x_rand.shape = (self.c_space_dim, 1)
             # c_space is space of joint angles: 
             # i.e. for 2dof_robot_arm (x, y) = (joint1_angle, joint2_angle)
-            while not is_edge_valid:
-                x_rand = self.sample(goal_config)
-                # print(f"x_rand:\n{x_rand}")
-                # Get the tree vertex nearest to x_rand
-                x_near_id, x_near_dist = self.tree.GetNearestVertex(x_rand)
-                x_near = self.tree.vertices[x_near_id]
-                # print(f"x_near:\n{x_near}")
-                # Check an edge between x_near and x_rand for collision/out of map
-                if self.env.edge_validity_checker(x_rand, x_near):
-                    is_edge_valid = True
-            is_edge_valid = False
+            x_rand = self.sample(goal_config)
+            # print(f"x_rand:\n{x_rand}")
+            # Get the tree vertex nearest to x_rand
+            x_near_id, x_near_dist = self.tree.GetNearestVertex(x_rand)
+            x_near = self.tree.vertices[x_near_id]
+            # print(f"x_near:\n{x_near}")
 
             # Extend from x_near towards x_rand
             x_new = self.extend(x_near, x_rand)
             # print(f"x_new:\n{x_new}")
 
-            # Add x_new to tree vertices
-            dist = self.env.compute_distance(x_near, x_new)
-            self.tree.AddVertex(x_new, cost=dist)
-            # Add edge between x_near and x_new
-            self.tree.AddEdge(x_near_id, branch_id)
+            # Check an edge between x_near and x_rand for collision/out of map
+            if self.env.edge_validity_checker(x_new, x_near):
+                branch_id += 1
+                # Add x_new to tree vertices
+                dist = self.env.compute_distance(x_near, x_new)
+                self.tree.AddVertex(x_new, cost=dist)
+                # Add edge between x_near and x_new
+                self.tree.AddEdge(x_near_id, branch_id)
 
-            # If x_new satisfy the goal criterion (close to the goal within some range), 
-            # start looking for vertices to build the path 
-            if branch_id % 200 == 0:
-                vertex_id, vertex_dist = self.tree.GetNearestVertex(goal_config)
-                vertex = self.tree.vertices[vertex_id]
-                if self.env.goal_criterion(vertex):
-                    path = []
-                    break
+                # If x_new satisfy the goal criterion (close to the goal within some range), 
+                # start looking for vertices to build the path 
+                if branch_id % 200 == 0:
+                    vertex_id, vertex_dist = self.tree.GetNearestVertex(goal_config)
+                    vertex = self.tree.vertices[vertex_id]
+                    if self.env.goal_criterion(vertex):
+                        path = []
+                        break
 
         # Double make sure that in case of different max_iter, we won't miss the path after all iterations
         vertex_id, vertex_dist = self.tree.GetNearestVertex(goal_config)
@@ -70,9 +68,11 @@ class RRTPlanner(object):
             path = []
 
         # Search the path
+        cost = 0
         if path is not None:
             print(f"\n#Iterations: {len(self.tree.vertices)-1}")
             while not np.array_equal(vertex, start_config):
+                cost += self.tree.costs[vertex_id]
                 path.append(tuple(vertex.flatten()))
                 # Find the parent of the current vertex
                 vertex_id = self.tree.edges[vertex_id]
@@ -82,10 +82,9 @@ class RRTPlanner(object):
             path.reverse()
             path = np.array(path)
             
-        cost = [self.env.compute_distance(path[i], path[i+1]) for i in range(len(path)-1)]
         end_time = time.time()
         self.tree.time_cost = end_time - start_time
-        self.tree.path_cost = round(sum(cost), 4)
+        self.tree.path_cost = cost
 
         return path
 

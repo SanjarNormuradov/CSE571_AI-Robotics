@@ -17,7 +17,7 @@ class ArmEnvironment:
         self.set_ee_link()
         self.joint_info = self.get_revolute_joint_info()
         self.joint_indices = [i[0] for i in self.joint_info]
-        self.goal_tolerance = 1.0
+        self.goal_tolerance = 0.05
         self.num_discretize = num_discretize
         self.calculate_c_space()
         self.map = np.array(self.c_space, dtype=np.uint8)
@@ -133,6 +133,11 @@ class ArmEnvironment:
 
         @param plan: a final [n x 2] numpy array of states
         """
+        # Turn off interactive mode. If turned-on, then after ax1.imshow() terminal waits for user interaction (pressing Ctrl button) -> program flow execution stops
+        plt.ioff()
+        if plt.isinteractive():
+            plt.interactive(False)
+
         image_map = np.repeat(self.map[:, :, None], repeats=3, axis=2)
         visit_map = (1 - np.copy(image_map))*255 # black is obstacle, white is free space
 
@@ -141,6 +146,9 @@ class ArmEnvironment:
 
         if visited is not None:
             visit_map[visited == 1] = 0.5
+        
+        # image reference frame starts from top-left corner with x-axis -> right and y-axis -> down
+        # this reference frame remains for later plots
         self.ax1.imshow(visit_map, interpolation="nearest", cmap="gray")
 
         if tree is not None:
@@ -152,6 +160,8 @@ class ArmEnvironment:
                 x = [sconfig[0], econfig[0]]
                 y = [sconfig[1], econfig[1]]
                 self.ax1.plot(y, x, 'r')
+            self.fig.canvas.draw()
+            plt.pause(1e-10)
 
         if plan is not None:
             plan = plan.T
@@ -162,9 +172,6 @@ class ArmEnvironment:
                 plt.plot(y, x, 'b', linewidth=3)
                 self.fig.canvas.draw()
                 plt.pause(.025) 
-
-        self.fig.canvas.draw()
-        plt.pause(1e-10)
 
         self.fig.suptitle(t='Red - tree\nBlue - path\nBlack - obstacles', 
                           x=.12, y=.98, ha='left', va='top', fontsize='x-large')
@@ -181,7 +188,7 @@ class ArmEnvironment:
         else:
             print("\nPress Enter to close plot visualization...")
             input()
-        # Free up the memory used by the image
+        # Free up the memory used by the image, and close the plots. Otherwise terminals waits for user interaction
         plt.close()
         # plt.show()
         

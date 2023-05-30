@@ -1,5 +1,5 @@
 Bias = 0.2;	Eta = 0.5;	#Obstacles = 1;	#Discretization = 50
 	Cost		Time Cost
 		Seed = 0
-	 79.6097	 33.7202
+	  0.0000	175.0913
 		Seed = 1
