@@ -1,0 +1,48 @@
+#epoch = 500
+data_part = 1.0
+                               success_rate:            mean =   0.3960; std =   0.1259
+                               average_reward(success): mean =  -5.5588; std =   0.6328
+                               average_reward    (all): mean =  -8.9657; std =   0.5538
+
+data_part = 0.5
+                               success_rate:            mean =   0.3368; std =   0.0400
+                               average_reward(success): mean =  -6.5666; std =   1.3606
+                               average_reward    (all): mean =  -9.4850; std =   0.5830
+
+data_part = 0.25
+                               success_rate:            mean =   0.3465; std =   0.1599
+                               average_reward(success): mean =  -7.5118; std =   1.0161
+                               average_reward    (all): mean = -10.0701; std =   0.3545
+
+#epoch = 1000
+data_part = 1.0
+                               success_rate:            mean =   0.4468; std =   0.0777
+                               average_reward(success): mean =  -5.1523; std =   0.3806
+                               average_reward    (all): mean =  -8.2055; std =   0.5001
+
+data_part = 0.5
+                               success_rate:            mean =   0.4070; std =   0.0940
+                               average_reward(success): mean =  -7.0137; std =   2.0880
+                               average_reward    (all): mean = -10.7379; std =   3.3543
+
+data_part = 0.25
+                               success_rate:            mean =   0.3543; std =   0.0794
+                               average_reward(success): mean = -17.2778; std =  19.4823
+                               average_reward    (all): mean = -19.9756; std =  19.6621
+
+#epoch = 2000
+data_part = 1.0
+                               success_rate:            mean =   0.4266; std =   0.0481
+                               average_reward(success): mean =  -4.9182; std =   0.2063
+                               average_reward    (all): mean =  -8.3461; std =   0.4003
+
+data_part = 0.5
+                               success_rate:            mean =   0.4386; std =   0.1032
+                               average_reward(success): mean =  -5.1478; std =   0.7437
+                               average_reward    (all): mean =  -8.3928; std =   0.7173
+
+data_part = 0.25
+                               success_rate:            mean =   0.3643; std =   0.0370
+                               average_reward(success): mean =  -6.5215; std =   1.7795
+                               average_reward    (all): mean =  -9.5236; std =   1.6165
+

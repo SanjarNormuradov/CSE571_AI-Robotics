@@ -1,0 +1,17 @@
+#epoch = 400
+data_part = 1.0
+                               success_rate:            mean =   0.992300; std =   0.007500
+                               average_reward(success): mean =  -4.073250; std =   0.043050
+                               average_reward    (all): mean =  -4.115900; std =   0.083800
+
+data_part = 0.5
+                               success_rate:            mean =   1.000000; std =   0.000000
+                               average_reward(success): mean =  -3.987000; std =   0.005400
+                               average_reward    (all): mean =  -3.987000; std =   0.005400
+
+data_part = 0.25
+                               success_rate:            mean =   0.999950; std =   0.000050
+                               average_reward(success): mean =  -4.037150; std =   0.005450
+                               average_reward    (all): mean =  -4.037400; std =   0.005700
+
+#epoch = 800
