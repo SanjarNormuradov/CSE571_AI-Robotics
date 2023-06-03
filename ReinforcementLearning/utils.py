@@ -98,6 +98,7 @@ def rollout(
         if agent_name == 'bc' or agent_name == 'dagger':
             action = agent.get_action(obs_for_agent)
         elif agent_name.lower() == 'pg':
+            # Add extra dimension (row) to existing observation space sample to form a batch of input data
             mu, std, _ = agent(torch.Tensor(obs_for_agent).unsqueeze(0).to(device))
             action = get_action(mu, std)[0]
         else:

@@ -43,7 +43,7 @@ def simulate_policy_dagger(env, policy, expert_paths, expert_policy=None, num_ep
 
                 obs = torch.tensor(obs).float().to(device)
                 act = torch.tensor(act).float().to(device)
-                act_pred = policy.forward(obs)
+                act_pred = policy(obs)
                 loss = criterion(act_pred, act)
 
                 # Compute gradients of the loss with respect to the parameters (weights, bias)
@@ -54,6 +54,7 @@ def simulate_policy_dagger(env, policy, expert_paths, expert_policy=None, num_ep
             # print(f"[{epoch+1}, {(i+1):5d}] loss: {running_loss / 10.:.8f}")
             losses.append(loss.item())
         loss_list.append(losses)
+        
         # Collecting more data for dagger
         trajs_recent = []
         for k in range(num_trajs_per_dagger):

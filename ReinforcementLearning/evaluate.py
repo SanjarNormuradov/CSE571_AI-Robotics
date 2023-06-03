@@ -27,8 +27,8 @@ def evaluate(env, policy, agent_name, num_validation_runs=10, episode_length=50,
         rewards_all += np.sum(path['rewards'])
         # print(f"test {k:5d}, success {str(success):<5}, reward {np.sum(path['rewards']):8.4f}")
     result_txt = [f"{success_count/num_validation_runs}",
-                  f"{(rewards_suc/max(success_count, 1)):10.6f}",
-                  f"{(rewards_all/num_validation_runs):10.6f}"]
+                  f"{(rewards_suc/max(success_count, 1)):8.4f}",
+                  f"{(rewards_all/num_validation_runs):8.4f}"]
     print(f"Success rate: {result_txt[0]}")
     print(f"Average reward (success only): {result_txt[1]}")
     print(f"Average reward          (all): {result_txt[2]}")
