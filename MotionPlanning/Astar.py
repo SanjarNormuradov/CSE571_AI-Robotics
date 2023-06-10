@@ -41,6 +41,7 @@ class AstarPlanner:
         # Revert: obstacles - black; free space - white
         self.image = (1-image)*255
 
+
     def get_neighbors(self, node:Node):
         """ 
         Returns all of the neighbouring nodes.
@@ -79,8 +80,18 @@ class AstarPlanner:
 
         return neighbors
 
+
     # Define the A* algorithm
     def Plan(self, start:np.array, goal:np.array):
+        """ 
+        Planning for A*
+
+        @param start: [self.env.c_space_dim x 1] np.array of int indices of the start configuration
+        @param goal : [self.env.c_space_dim x 1] np.array of int indices of the goal configuration
+
+        @return path: list of tuples, where each tuple of shape (1, num_joints) is int indices in range [0, self.env.num_discretize) 
+                      of discretized joint angle space [joint_lower_limit, joint_upper_limit] 
+        """
         start_time = time.time()
         start = start.flatten()
         goal = goal.flatten()
@@ -118,8 +129,9 @@ class AstarPlanner:
         # print(f"\nPath:\n{self.path}")
         end_time = time.time()
         self.time_cost = end_time - start_time
-        # print(f"\nCost: {self.cost}\n#States Expanded: {self.num_states_expnd}")
+        print(f"cost: {self.cost}\n#states expanded: {self.num_states_expnd}\ntime cost: {self.time_cost:6.4f}")
         return self.path
+
 
     def h(self, start_config:np.array):
         """ 
@@ -132,6 +144,7 @@ class AstarPlanner:
         """
         return self.env.dist_to_goal(start_config.reshape(self.env.c_space_dim, 1))
     
+
     def plot(self, ):
         # Plot the elements in the open set
         for index in self.open_set_indices:
@@ -162,3 +175,4 @@ class AstarPlanner:
         # plt.show()
         # print("\nPress Enter to close plot visualization...")
         # input()
+        return [self.cost, self.num_states_expnd, self.time_cost]
