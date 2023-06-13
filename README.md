@@ -2,7 +2,7 @@
 This project is the extracurricular sequel of "CSE571 AI-based Mobile Robotics" course. 
 
 The course covered far more, but in assignments the following methods/algorithms were implemented: 
-- *Localization*: **EKF / Particle Filter** (Odometry Motion Model, Landmark Sensor Model) on a car in PyBullet. 
+- *Localization*: **EKF / Particle Filter** (Odometry Motion Model, Landmark Sensor Model) on a car in [PyBullet](https://pybullet.org/wordpress/). 
 - _Motion Planning_: __A* / LPA* / D* / RRT / RRT*__ on 2-DoF/3-DoF robotic arm with scene obstacles, RRT* for non-holonomic car in PyBullet. 
 - _Reinforcement Learning_: __Behavior Cloning / DAgger__ on [Reacher](https://www.gymlibrary.dev/environments/mujoco/reacher/), **Policy Gradient** on [Inverted Pendulum](https://www.gymlibrary.dev/environments/mujoco/inverted_pendulum/) all of which are parts of [MuJoCo environment](https://www.gymlibrary.dev/environments/mujoco/inverted_pendulum/). 
 
