@@ -88,31 +88,9 @@ class RRTPlanner(object):
 
         return path
 
-    def extend(self, x_near:np.array, x_rand:np.array, step_size=0.01):
-        # Find action that would take from x_near=(x1,y1,z1) ---> x_rand=(x2,y2,z2)
-        # Compute distance between x_near and x_rand
-        dist = self.env.compute_distance(x_near, x_rand)
-        # Scale the distance according to self.eta
-        dist *= self.eta
-        # Compute x_new=(x3,y3,z3) using trigonometry
-        if self.env.c_space_dim == 2:
-            # Compute inclination angle
-            alpha = math.atan2(x_rand[1] - x_near[1], x_rand[0] - x_near[0])
-            # Compute (x3,z3)
-            x_new = [x_near[0] + dist * math.cos(alpha), 
-                     x_near[1] + dist * math.sin(alpha)]
-        elif self.env.c_space_dim == 3:
-            # Compute inclination angle
-            alpha = math.atan2(x_rand[2] - x_near[2], self.env.compute_distance(x_rand[:2], x_near[:2]))
-            beta = math.atan2(x_rand[1] - x_near[1], x_rand[0] - x_near[0])
-            # Compute (x3,y3,z3)
-            x_new = [x_near[0] + dist * math.cos(alpha) * math.cos(beta), 
-                     x_near[1] + dist * math.cos(alpha) * math.sin(beta), 
-                     x_near[2] + dist * math.sin(alpha)]
-        # Align approximate x_new with one of grid cells 
-        x_new = np.round(np.array(x_new)).astype(int)
-
-        return x_new
+    def extend(self, x_nearest, x_rand):
+        # Find action that would take from x_nearest=(x1,y1,z1) ---> x_rand=(x2,y2,z2)
+        return np.round(np.array(x_nearest + self.eta * (x_rand - x_nearest))).astype(int)
 
 
     def sample(self, goal:np.array):

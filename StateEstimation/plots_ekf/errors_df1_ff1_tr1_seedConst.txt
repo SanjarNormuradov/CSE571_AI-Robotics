@@ -1,4 +1,0 @@
-Data factor: 1
-Filter factor: 1
-     9.21525888		     1.73037672		 0
-

@@ -20,6 +20,7 @@ class RRTStarPlanner(object):
         self.max_iter = max_iter        # Max Iterations
         self.eta = eta                  # Distance to extend
 
+
     def compute_cost(self, node_id):
         root_id = self.tree.GetRootID()
 
@@ -34,6 +35,7 @@ class RRTStarPlanner(object):
             node = parent
 
         return cost
+
 
     def Plan(self, start_config, goal_config, rad=10):
         start_time = time.time()
@@ -129,31 +131,11 @@ class RRTStarPlanner(object):
 
         return path
 
+
     def extend(self, x_nearest, x_rand):
         # Find action that would take from x_nearest=(x1,y1,z1) ---> x_rand=(x2,y2,z2)
-        # Compute distance between x_nearest and x_rand
-        dist = self.env.compute_distance(x_nearest, x_rand)
-        # Scale the distance according to self.eta
-        dist *= self.eta
-        # Compute x_new=(x3,y3,z3) using trigonometry
-        if self.env.c_space_dim == 2:
-            # Compute inclination angle
-            alpha = math.atan2(x_rand[1] - x_nearest[1], x_rand[0] - x_nearest[0])
-            # Compute (x3,z3)
-            x_new = [x_nearest[0] + dist * math.cos(alpha), 
-                     x_nearest[1] + dist * math.sin(alpha)]
-        elif self.env.c_space_dim == 3:
-            # Compute inclination angle
-            alpha = math.atan2(x_rand[2] - x_nearest[2], self.env.compute_distance(x_rand[:2], x_nearest[:2]))
-            beta = math.atan2(x_rand[1] - x_nearest[1], x_rand[0] - x_nearest[0])
-            # Compute (x3,y3,z3)
-            x_new = [x_nearest[0] + dist * math.cos(alpha) * math.cos(beta), 
-                     x_nearest[1] + dist * math.cos(alpha) * math.sin(beta), 
-                     x_nearest[2] + dist * math.sin(alpha)]
-        # Align approximate x_new with one of grid cells 
-        x_new = np.round(np.array(x_new)).astype(int)
+        return np.round(np.array(x_nearest + self.eta * (x_rand - x_nearest))).astype(int)
 
-        return x_new
 
     def sample(self, goal):
         # Sample random point from map
