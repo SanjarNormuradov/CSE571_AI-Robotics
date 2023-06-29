@@ -7,4 +7,4 @@ The course covered theoretically far more, but the following methods/algorithms 
 
 This repo content discusses some observations and analyses of the methods' performance based on different parameters, reinforced with visual proofs (plots, screenshots, GIFs)
 
-***The code for the methods is NOT provided due to the course policy, but could be shared on demand***
+***The code for the methods is NOT provided due to the course policy, but could be demonstrated on demand***
