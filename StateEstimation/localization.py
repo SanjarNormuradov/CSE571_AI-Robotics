@@ -223,14 +223,25 @@ if __name__ == '__main__':
                 initial_cov = np.diag(np.array([10, 10, 1], dtype=float))
 
                 # Create simulation scene and add the robot
-                env = Field(
-                    data_factor * alphas,
-                    data_factor * beta,
-                    gui=args.plot,
-                    use_learned_observation_model=args.use_learned_observation_model,
-                    supervision_mode=args.supervision_mode,
-                    device=args.device
-                )
+                if rand_seed == rand_start:
+                    env = Field(
+                        data_factor * alphas,
+                        data_factor * beta,
+                        gui=args.plot,
+                        use_learned_observation_model=args.use_learned_observation_model,
+                        supervision_mode=args.supervision_mode,
+                        device=args.device
+                    )
+                else:
+                    env = Field(
+                        data_factor * alphas,
+                        data_factor * beta,
+                        gui=False,
+                        use_learned_observation_model=args.use_learned_observation_model,
+                        supervision_mode=args.supervision_mode,
+                        device=args.device
+                    ) 
+                    
                 if args.filter_type == 'none':
                     filt = None
                 elif args.filter_type == 'ekf':
@@ -268,9 +279,11 @@ if __name__ == '__main__':
                     # img.save(imagename + '.png')
                     # print("\nPress Enter to disconnect from the simulation...")
                     # input()
-                    print("\nTake screenshot, and press Enter to restart the simulation with different data/filter factors...")
-                    input()
+                    if rand_seed == rand_start:
+                        print("\nTake screenshot, and press Enter to restart the simulation with different data/filter factors...")
+                        input()
                     env.p.disconnect()
+
             pos_errors = np.array(pos_errors)
             anees = np.array(anees)
             file.write(f"[{data_factor:9.6f}, {filter_factor:9.6f}]: [{pos_errors.mean():11.6f}, {pos_errors.std():11.6f}]; [{anees.mean():11.6f}, {anees.std():11.6f}]\n")
@@ -299,13 +312,13 @@ if __name__ == '__main__':
     mean_plot.set_title(label="mean", loc='left')
     std_plot.set_title(label="std", loc='left')
 
-    mean_plot.plot(factor_list, mean_dict['position'], label='Position Error Mean', 
+    mean_plot.plot(factor_list, mean_dict['position'], label='Position Error mean', 
                    color='blue', linestyle='--', linewidth=1, marker='o', markersize=3)
-    mean_plot.plot(factor_list, mean_dict['anees'], label='ANEES Mean', 
+    mean_plot.plot(factor_list, mean_dict['anees'], label='ANEES mean', 
                    color='red', linestyle='-', linewidth=1, marker='s', markersize=3)
-    std_plot.plot(factor_list, std_dict['position'], label='Position Error Mean', 
+    std_plot.plot(factor_list, std_dict['position'], label='Position Error std', 
                    color='blue', linestyle='--', linewidth=1, marker='o', markersize=3)
-    std_plot.plot(factor_list, std_dict['anees'], label='ANEES Mean', 
+    std_plot.plot(factor_list, std_dict['anees'], label='ANEES std', 
                    color='red', linestyle='-', linewidth=1, marker='s', markersize=3)
     fig.legend()
     plt.savefig(stat_filename + ".png", dpi=300, bbox_inches='tight')
